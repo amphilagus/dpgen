@@ -1071,7 +1071,7 @@ def coll_vasp_md(jdata):
         # convert outcars
         valid_outcars = []
         for jj in scale:
-            for kk in range(pert_numb):
+            for kk in range(pert_numb+1):
                 path_work = os.path.join(f"scale-{jj:.3f}", "%06d" % kk)  # noqa: UP031
                 outcar = os.path.join(path_work, "OUTCAR")
                 # dlog.info("OUTCAR",outcar)
@@ -1115,7 +1115,18 @@ def coll_vasp_md(jdata):
                     all_sys.append(_sys)
         # create deepmd data
         if all_sys.get_nframes() >= coll_ndata:
-            all_sys = all_sys.sub_system(np.arange(coll_ndata))
+            # Uniformly sample from the trajectory by dividing into coll_ndata segments
+            # and taking the last frame of each segment
+            total_frames = all_sys.get_nframes()
+            segment_size = total_frames // coll_ndata
+            selected_indices = []
+            for i in range(coll_ndata):
+                # Take the last frame of each segment
+                segment_end = (i + 1) * segment_size - 1
+                if i == coll_ndata - 1:  # For the last segment, ensure we don't exceed total frames
+                    segment_end = min(segment_end, total_frames - 1)
+                selected_indices.append(segment_end)
+            all_sys = all_sys.sub_system(np.array(selected_indices))
         all_sys.to_deepmd_raw("deepmd")
         all_sys.to_deepmd_npy("deepmd", set_size=all_sys.get_nframes())
         os.chdir(path_md)
@@ -1249,7 +1260,18 @@ def coll_abacus_md(jdata):
                     all_sys.append(_sys)
         # create deepmd data
         if all_sys.get_nframes() >= coll_ndata:
-            all_sys = all_sys.sub_system(np.arange(coll_ndata))
+            # Uniformly sample from the trajectory by dividing into coll_ndata segments
+            # and taking the last frame of each segment
+            total_frames = all_sys.get_nframes()
+            segment_size = total_frames // coll_ndata
+            selected_indices = []
+            for i in range(coll_ndata):
+                # Take the last frame of each segment
+                segment_end = (i + 1) * segment_size - 1
+                if i == coll_ndata - 1:  # For the last segment, ensure we don't exceed total frames
+                    segment_end = min(segment_end, total_frames - 1)
+                selected_indices.append(segment_end)
+            all_sys = all_sys.sub_system(np.array(selected_indices))
         print(all_sys.get_nframes())
         all_sys.to_deepmd_raw("deepmd")
         all_sys.to_deepmd_npy("deepmd", set_size=all_sys.get_nframes())
